@@ -166,13 +166,15 @@ st.markdown("---")
 
 # Stats timeframe
 st.markdown("### 📊 Analytics")
-    hours_filter = st.selectbox("Timeframe", [1, 6, 12, 24, 48], index=3,
-                                format_func=lambda x: f"Last {x}h")
+hours_filter = st.selectbox("Timeframe", [1, 6, 12, 24, 48], index=3,
+                            format_func=lambda x: f"Last {x}h")
 
-    st.markdown("---")
-    st.markdown(
-        "<div style='color:#64748b;font-size:12px;text-align:center'>"
-        "Smart PPE Compliance Monitor<br>Powered by YOLO26</div>",
+st.markdown("---")
+st.markdown(
+    "<div style='color:#64748b;font-size:12px;text-align:center'>"
+    "Smart PPE Compliance Monitor<br>Powered by YOLO26</div>",
+    unsafe_allow_html=True
+)
         unsafe_allow_html=True
     )
 
