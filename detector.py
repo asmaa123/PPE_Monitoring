@@ -5,6 +5,26 @@ from dataclasses import dataclass, field
 from typing import Optional
 import time
 import torch
+import os
+
+# Add safe globals for PyTorch 2.6+ compatibility
+try:
+    from ultralytics.nn.tasks import SegmentationModel, DetectionModel, ClassificationModel
+    from ultralytics.nn.modules import C2f, Conv, Bottleneck
+    from ultralytics.utils import yaml_load
+
+    safe_classes = [
+        SegmentationModel, DetectionModel, ClassificationModel,
+        C2f, Conv, Bottleneck, yaml_load
+    ]
+
+    for cls in safe_classes:
+        try:
+            torch.serialization.add_safe_globals([cls])
+        except Exception:
+            pass  # Ignore if already added
+except ImportError:
+    pass  # Older PyTorch version
 
 # ══════════════════════════════════════════
 #  Classes Config
@@ -80,35 +100,46 @@ class PPEDetector:
             iou        : IoU threshold for NMS
         """
         print(f"🔄 Loading model from: {model_path}")
-        # Handle PyTorch 2.6+ weights_only security feature
+
+        # Try multiple loading approaches for PyTorch 2.6+ compatibility
+        loading_success = False
+
+        # Approach 1: Standard YOLO loading with environment variable
         try:
-            # Temporarily override torch.load to allow trusted model loading
-            original_load = torch.load
-
-            def safe_load(*args, **kwargs):
-                kwargs['weights_only'] = False
-                return original_load(*args, **kwargs)
-
-            torch.load = safe_load
+            os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
             self.model = YOLO(model_path)
-            torch.load = original_load  # Restore original
+            loading_success = True
+            print("✅ Model loaded successfully with standard method!")
+        except Exception as e1:
+            print(f"Standard loading failed: {e1}")
 
-        except Exception as e:
-            print(f"YOLO loading failed: {e}")
-            # Try direct torch loading as last resort
-            try:
-                print("Attempting direct torch loading...")
-                checkpoint = torch.load(model_path, weights_only=False)
-                print("Direct loading successful, but YOLO wrapper failed")
-                raise Exception("Model loaded but YOLO wrapper initialization failed")
-            except Exception as e2:
-                raise Exception(f"All loading methods failed: YOLO error: {e}, Torch error: {e2}")
+            # Approach 2: Try with weights_only override
+            if not loading_success:
+                try:
+                    # Temporarily patch torch.load
+                    import torch.serialization
+                    original_load = torch.load
+
+                    def patched_load(*args, **kwargs):
+                        kwargs.setdefault('weights_only', False)
+                        return original_load(*args, **kwargs)
+
+                    torch.load = patched_load
+                    self.model = YOLO(model_path)
+                    torch.load = original_load
+                    loading_success = True
+                    print("✅ Model loaded successfully with patched torch.load!")
+                except Exception as e2:
+                    print(f"Patched loading failed: {e2}")
+                    torch.load = original_load  # Restore
+
+        if not loading_success:
+            raise Exception("All model loading methods failed. Please check the model file.")
 
         self.conf       = conf
         self.iou        = iou
         self._prev_time = time.time()
         self.fps        = 0.0
-        print("✅ Model loaded successfully!")
         print(f"   Classes: {CLASS_NAMES}")
 
     # ── FPS ───────────────────────────────
