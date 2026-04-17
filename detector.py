@@ -101,40 +101,26 @@ class PPEDetector:
         """
         print(f"🔄 Loading model from: {model_path}")
 
-        # Try multiple loading approaches for PyTorch 2.6+ compatibility
-        loading_success = False
+        # Set environment variables for PyTorch compatibility
+        os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
+        os.environ['TORCH_USE_CUDA_DSA'] = '1'
 
-        # Approach 1: Standard YOLO loading with environment variable
+        # Try loading with ultralytics latest version
         try:
-            os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
             self.model = YOLO(model_path)
-            loading_success = True
-            print("✅ Model loaded successfully with standard method!")
-        except Exception as e1:
-            print(f"Standard loading failed: {e1}")
-
-            # Approach 2: Try with weights_only override
-            if not loading_success:
-                try:
-                    # Temporarily patch torch.load
-                    import torch.serialization
-                    original_load = torch.load
-
-                    def patched_load(*args, **kwargs):
-                        kwargs.setdefault('weights_only', False)
-                        return original_load(*args, **kwargs)
-
-                    torch.load = patched_load
-                    self.model = YOLO(model_path)
-                    torch.load = original_load
-                    loading_success = True
-                    print("✅ Model loaded successfully with patched torch.load!")
-                except Exception as e2:
-                    print(f"Patched loading failed: {e2}")
-                    torch.load = original_load  # Restore
-
-        if not loading_success:
-            raise Exception("All model loading methods failed. Please check the model file.")
+            print("✅ Model loaded successfully!")
+        except Exception as e:
+            print(f"❌ YOLO loading failed: {e}")
+            # Try alternative: load model directly with torch
+            try:
+                import torch
+                print("🔄 Attempting direct torch loading...")
+                # Load checkpoint with weights_only=False
+                checkpoint = torch.load(model_path, map_location='cpu', weights_only=False)
+                print("✅ Checkpoint loaded, but YOLO wrapper failed")
+                raise Exception("Model checkpoint loaded but YOLO initialization failed")
+            except Exception as e2:
+                raise Exception(f"❌ All loading methods failed: {e} | Torch error: {e2}")
 
         self.conf       = conf
         self.iou        = iou
