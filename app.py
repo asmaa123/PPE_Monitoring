@@ -106,7 +106,33 @@ init_db()
 
 @st.cache_resource
 def load_model(path):
-    return PPEDetector(path, conf=0.45, iou=0.5)
+    try:
+        # Try multiple possible paths for the model
+        possible_paths = [
+            path,  # Original path
+            os.path.join(os.getcwd(), path),  # Absolute path from current dir
+            os.path.join(os.path.dirname(__file__), path),  # Relative to script dir
+        ]
+
+        model_file = None
+        for p in possible_paths:
+            if os.path.exists(p):
+                model_file = p
+                break
+
+        if model_file is None:
+            st.error(f"❌ Model file not found. Tried paths: {possible_paths}")
+            st.error("Please ensure the model file is uploaded to the repository.")
+            return None
+
+        st.info(f"🔄 Loading model from: {model_file}")
+        detector = PPEDetector(model_file, conf=0.45, iou=0.5)
+        st.success("✅ Model loaded successfully!")
+        return detector
+    except Exception as e:
+        st.error(f"❌ Error loading model: {str(e)}")
+        st.error("Please check the model file and try again.")
+        return None
 
 
 # ══════════════════════════════════════════
@@ -171,6 +197,10 @@ if not Path(model_path).exists():
     st.stop()
 
 detector = load_model(model_path)
+if detector is None:
+    st.error("❌ Failed to load the model. Please check the error messages above.")
+    st.stop()
+
 detector.conf = conf_thresh
 
 
