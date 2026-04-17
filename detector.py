@@ -82,12 +82,27 @@ class PPEDetector:
         print(f"🔄 Loading model from: {model_path}")
         # Handle PyTorch 2.6+ weights_only security feature
         try:
-            from ultralytics.nn.tasks import SegmentationModel
-            with torch.serialization.safe_globals([SegmentationModel]):
-                self.model = YOLO(model_path)
-        except ImportError:
-            # Fallback for older PyTorch versions
+            # Temporarily override torch.load to allow trusted model loading
+            original_load = torch.load
+
+            def safe_load(*args, **kwargs):
+                kwargs['weights_only'] = False
+                return original_load(*args, **kwargs)
+
+            torch.load = safe_load
             self.model = YOLO(model_path)
+            torch.load = original_load  # Restore original
+
+        except Exception as e:
+            print(f"YOLO loading failed: {e}")
+            # Try direct torch loading as last resort
+            try:
+                print("Attempting direct torch loading...")
+                checkpoint = torch.load(model_path, weights_only=False)
+                print("Direct loading successful, but YOLO wrapper failed")
+                raise Exception("Model loaded but YOLO wrapper initialization failed")
+            except Exception as e2:
+                raise Exception(f"All loading methods failed: YOLO error: {e}, Torch error: {e2}")
 
         self.conf       = conf
         self.iou        = iou
