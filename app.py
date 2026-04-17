@@ -145,7 +145,16 @@ with st.sidebar:
     # Model path
     model_path = st.text_input("Model Path", value="models/best.pt")
 
-    # Mode
+# ══════════════════════════════════════════
+#  Mode Selection with Cloud Compatibility
+# ══════════════════════════════════════════
+import os
+is_streamlit_cloud = os.getenv('STREAMLIT_SERVER_HEADLESS', 'false').lower() == 'true' or 'mount' in os.getcwd()
+
+if is_streamlit_cloud:
+    mode = st.radio("Mode", ["🎬 Upload Video"], index=0)
+    st.info("ℹ️ **Webcam mode is not available** on Streamlit Cloud. Please use video upload instead.")
+else:
     mode = st.radio("Mode", ["📹 Live Webcam", "🎬 Upload Video"], index=0)
 
     st.markdown("---")
@@ -360,24 +369,29 @@ def on_frame(result):
 #  Mode: Live Webcam
 # ══════════════════════════════════════════
 if mode == "📹 Live Webcam":
+    if is_streamlit_cloud:
+        st.error("❌ Webcam access is not available on Streamlit Cloud. Please use video upload mode instead.")
+        st.stop()
+
     start_btn = st.button("▶ Start Live Detection", type="primary", use_container_width=True)
     stop_btn  = st.button("⏹ Stop", use_container_width=True)
 
     if start_btn:
         frame_count = 0
-        for result in detector.process_webcam(cam_index=0, callback=on_frame):
-            if stop_btn:
-                break
+        try:
+            for result in detector.process_webcam(cam_index=0, callback=on_frame):
+                if stop_btn:
+                    break
 
-            # Show frame
-            frame_rgb = cv2.cvtColor(result.annotated_frame, cv2.COLOR_BGR2RGB)
-            video_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
+                # Show frame
+                frame_rgb = cv2.cvtColor(result.annotated_frame, cv2.COLOR_BGR2RGB)
+                video_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
 
-            # Status panel
-            score = result.compliance_score
-            s_color = "#22c55e" if score >= 80 else ("#f59e0b" if score >= 50 else "#ef4444")
-            status_html = f"""
-            <div style='background:#1e2130;border-radius:12px;padding:16px;'>
+                # Status panel
+                score = result.compliance_score
+                s_color = "#22c55e" if score >= 80 else ("#f59e0b" if score >= 50 else "#ef4444")
+                status_html = f"""
+                <div style='background:#1e2130;border-radius:12px;padding:16px;'>
                 <div style='font-size:42px;font-weight:800;color:{s_color};text-align:center'>
                     {score:.0f}%
                 </div>
@@ -418,6 +432,10 @@ if mode == "📹 Live Webcam":
             if frame_count % 30 == 0:
                 draw_analytics()
                 draw_violations_table()
+
+        except Exception as e:
+            st.error(f"❌ Webcam error: {str(e)}")
+            st.error("💡 **Tip**: Webcam access requires local execution. Use video upload mode instead.")
 
 
 # ══════════════════════════════════════════
