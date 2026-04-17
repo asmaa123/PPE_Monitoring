@@ -292,7 +292,7 @@ def draw_analytics():
         )
         fig1.add_hline(y=80, line_dash="dash", line_color="#22c55e",
                        annotation_text="Target 80%")
-        chart_placeholder1.plotly_chart(fig1, use_container_width=True)
+        chart_placeholder1.plotly_chart(fig1, use_container_width=True, key="compliance_chart")
 
     # Violations by type
     if stats_now["by_type"]:
@@ -313,7 +313,7 @@ def draw_analytics():
             margin=dict(l=10, r=10, t=40, b=10),
             showlegend=False,
         )
-        chart_placeholder2.plotly_chart(fig2, use_container_width=True)
+        chart_placeholder2.plotly_chart(fig2, use_container_width=True, key="violations_chart")
 
 
 # ══════════════════════════════════════════
