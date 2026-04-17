@@ -1,0 +1,13 @@
+# System dependencies for Streamlit Cloud
+# Uncomment if needed for specific packages
+
+# OpenCV dependencies
+# libglib2.0-0
+# libsm6
+# libxext6
+# libxrender-dev
+# libgomp1
+# libgthread-2.0-0
+
+# For YOLOv8
+# ffmpeg
