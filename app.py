@@ -492,10 +492,6 @@ else:
                 """
                 status_placeholder.markdown(status_html, unsafe_allow_html=True)
 
-                if frame_idx[0] % 30 == 0:
-                    draw_analytics()
-                    draw_violations_table()
-
             detector.process_video(tmp_path, callback=on_video_frame)
             os.unlink(tmp_path)
 
