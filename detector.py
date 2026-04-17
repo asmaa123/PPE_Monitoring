@@ -4,6 +4,7 @@ from ultralytics import YOLO
 from dataclasses import dataclass, field
 from typing import Optional
 import time
+import torch
 
 # ══════════════════════════════════════════
 #  Classes Config
@@ -79,7 +80,15 @@ class PPEDetector:
             iou        : IoU threshold for NMS
         """
         print(f"🔄 Loading model from: {model_path}")
-        self.model      = YOLO(model_path)
+        # Handle PyTorch 2.6+ weights_only security feature
+        try:
+            from ultralytics.nn.tasks import SegmentationModel
+            with torch.serialization.safe_globals([SegmentationModel]):
+                self.model = YOLO(model_path)
+        except ImportError:
+            # Fallback for older PyTorch versions
+            self.model = YOLO(model_path)
+
         self.conf       = conf
         self.iou        = iou
         self._prev_time = time.time()
