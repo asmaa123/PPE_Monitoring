@@ -157,17 +157,15 @@ if is_streamlit_cloud:
 else:
     mode = st.radio("Mode", ["📹 Live Webcam", "🎬 Upload Video"], index=0)
 
-    st.markdown("---")
+# Settings (always available)
+st.markdown("### ⚙️ Settings")
+conf_thresh = st.slider("Confidence", 0.1, 0.9, 0.45, 0.05)
+zone        = st.selectbox("Zone", ["Zone A", "Zone B", "Zone C", "Zone D"])
 
-    # Settings
-    st.markdown("### ⚙️ Settings")
-    conf_thresh = st.slider("Confidence", 0.1, 0.9, 0.45, 0.05)
-    zone        = st.selectbox("Zone", ["Zone A", "Zone B", "Zone C", "Zone D"])
+st.markdown("---")
 
-    st.markdown("---")
-
-    # Stats timeframe
-    st.markdown("### 📊 Analytics")
+# Stats timeframe
+st.markdown("### 📊 Analytics")
     hours_filter = st.selectbox("Timeframe", [1, 6, 12, 24, 48], index=3,
                                 format_func=lambda x: f"Last {x}h")
 
