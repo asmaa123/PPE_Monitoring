@@ -175,8 +175,6 @@ st.markdown(
     "Smart PPE Compliance Monitor<br>Powered by YOLO26</div>",
     unsafe_allow_html=True
 )
-        unsafe_allow_html=True
-    )
 
 
 # ══════════════════════════════════════════
